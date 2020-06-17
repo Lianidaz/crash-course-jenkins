@@ -1,0 +1,97 @@
+# This file is for reference only!
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - dockerServer:
+              clientCertificate: |-
+                -----BEGIN CERTIFICATE-----
+                <CERT HERE>
+                -----END CERTIFICATE-----
+              clientKeySecret: "{YOUR KEY}"
+              description: "dockercerts"
+              id: "dockercerts"
+              scope: GLOBAL
+              serverCaCertificate: |-
+                <CERT HERE>
+                -----END CERTIFICATE-----
+          - dockerServer:
+              clientCertificate: |-
+                -----BEGIN CERTIFICATE-----
+                <CERT HERE>
+                -----END CERTIFICATE-----
+              clientKeySecret: "{YOUR KEY}"
+              description: "k8s"
+              id: "k8s"
+              scope: GLOBAL
+jenkins:
+  agentProtocols:
+    - "JNLP4-connect"
+    - "Ping"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  clouds:
+    - docker:
+        containerCap: 4
+        dockerApi:
+          connectTimeout: 60
+          dockerHost:
+            credentialsId: "dockercerts"
+            uri: "tcp://docker:2376"
+          readTimeout: 60
+        name: "docker"
+        templates:
+          - dockerTemplateBase:
+              image: "jenkins/agent"
+            instanceCapStr: "2"
+            labelString: "docker"
+            name: "docker-drone"
+            nodeProperties:
+              - toolLocation:
+                  locations:
+                    - home: "/usr/lib/jvm/java-1.8-openjdk"
+                      key: "hudson.model.JDK$DescriptorImpl@j9"
+            pullStrategy: PULL_ALWAYS
+            pullTimeout: 300
+            remoteFs: "/home/jenkins"
+    - kubernetes:
+        containerCap: 10
+        containerCapStr: "10"
+        credentialsId: "k8s"
+        jenkinsUrl: "http://10.254.8.78:8080/"
+        maxRequestsPerHost: 32
+        maxRequestsPerHostStr: "32"
+        name: "kubernetes"
+        namespace: "jenkins-builds" # Create NS before running
+        serverUrl: "<K8S ENDPOINT>"
+        skipTlsVerify: true # careful!
+        templates:
+          - containers:
+              - args: "cat"
+                command: "/bin/sh -c"
+                image: "jenkins/agent"
+                livenessProbe:
+                  failureThreshold: 0
+                  initialDelaySeconds: 0
+                  periodSeconds: 0
+                  successThreshold: 0
+                  timeoutSeconds: 0
+                name: "drone"
+                ttyEnabled: true
+                workingDir: "/home/jenkins/agent"
+            hostNetwork: false
+            idleMinutes: 3
+            idleMinutesStr: "3"
+            label: "k8s"
+            name: "k8s"
+            namespace: "jenkins-builds"
+            nodeProperties:
+              - toolLocation:
+                  locations:
+                    - home: "/usr/lib/jvm/java-1.8-openjdk"
+                      key: "hudson.model.JDK$DescriptorImpl@j9"
+            nodeSelector: "beta.kubernetes.io/os=linux"
+            showRawYaml: false
+            yamlMergeStrategy: "override"
