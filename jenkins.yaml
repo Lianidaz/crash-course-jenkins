@@ -57,41 +57,99 @@ jenkins:
             pullTimeout: 300
             remoteFs: "/home/jenkins"
     - kubernetes:
-        containerCap: 10
-        containerCapStr: "10"
-        credentialsId: "k8s"
-        jenkinsUrl: "http://10.254.8.78:8080/"
-        maxRequestsPerHost: 32
-        maxRequestsPerHostStr: "32"
-        name: "kubernetes"
-        namespace: "jenkins-builds" # Create NS before running
-        serverUrl: "<K8S ENDPOINT>"
-        skipTlsVerify: true # careful!
-        templates:
-          - containers:
-              - args: "cat"
-                command: "/bin/sh -c"
-                image: "jenkins/agent"
-                livenessProbe:
-                  failureThreshold: 0
-                  initialDelaySeconds: 0
-                  periodSeconds: 0
-                  successThreshold: 0
-                  timeoutSeconds: 0
-                name: "drone"
-                ttyEnabled: true
-                workingDir: "/home/jenkins/agent"
-            hostNetwork: false
-            idleMinutes: 3
-            idleMinutesStr: "3"
-            label: "k8s"
-            name: "k8s"
-            namespace: "jenkins-builds"
-            nodeProperties:
-              - toolLocation:
-                  locations:
-                    - home: "/usr/lib/jvm/java-1.8-openjdk"
-                      key: "hudson.model.JDK$DescriptorImpl@j9"
-            nodeSelector: "beta.kubernetes.io/os=linux"
-            showRawYaml: false
-            yamlMergeStrategy: "override"
+      containerCap: 10
+      containerCapStr: "10"
+      credentialsId: "k8s02"
+      jenkinsUrl: "http://10.254.8.78:8080/"
+      maxRequestsPerHost: 32
+      maxRequestsPerHostStr: "32"
+      name: "kubernetes"
+      namespace: "jenkins-builds"
+      serverUrl: "https://10.2.0.80:443"
+      skipTlsVerify: true
+      templates:
+        - containers:
+            - args: "cat"
+              command: "/bin/sh -c"
+              image: "jenkins/agent"
+              livenessProbe:
+                failureThreshold: 0
+                initialDelaySeconds: 0
+                periodSeconds: 0
+                successThreshold: 0
+                timeoutSeconds: 0
+              name: "drone"
+              ttyEnabled: true
+              workingDir: "/home/jenkins/agent"
+          hostNetwork: false
+          idleMinutes: 3
+          idleMinutesStr: "3"
+          label: "k8s"
+          name: "k8s"
+          namespace: "jenkins-builds"
+          nodeProperties:
+            - toolLocation:
+                locations:
+                  - home: "/usr/lib/jvm/java-1.8-openjdk"
+                    key: "hudson.model.JDK$DescriptorImpl@j9"
+          nodeSelector: "beta.kubernetes.io/os=linux"
+          showRawYaml: false
+          yamlMergeStrategy: "override"
+        - containers:
+            - args: "cat"
+              command: "/bin/sh -c"
+              image: "liandiaz/jenkins-drone:allinone"
+              livenessProbe:
+                failureThreshold: 0
+                initialDelaySeconds: 0
+                periodSeconds: 0
+                successThreshold: 0
+                timeoutSeconds: 0
+              name: "aio"
+              ttyEnabled: true
+              workingDir: "/home/jenkins/agent"
+            - image: "docker:18.05-dind"
+              livenessProbe:
+                failureThreshold: 0
+                initialDelaySeconds: 0
+                periodSeconds: 0
+                successThreshold: 0
+                timeoutSeconds: 0
+              name: "dind"
+              privileged: true
+              ttyEnabled: true
+              workingDir: "/jenkins/"
+          envVars:
+            - envVar:
+                key: "BOO"
+                value: "FAR"
+          hostNetwork: false
+          idleMinutes: 5
+          idleMinutesStr: "5"
+          label: "k8s-aio"
+          name: "k8s-aio"
+          namespace: "jenkins-builds"
+          nodeProperties:
+            - toolLocation:
+                locations:
+                  - home: "/usr/lib/jvm/java-1.8-openjdk"
+                    key: "hudson.model.JDK$DescriptorImpl@j9"
+          nodeSelector: "beta.kubernetes.io/os=linux"
+          slaveConnectTimeout: 120
+          slaveConnectTimeoutStr: "120"
+          yaml: |-
+            spec:
+              containers:
+                - name: aio
+                  env:
+                    - name: DOCKER_HOST
+                      value: tcp://localhost:2375
+          yamlMergeStrategy: "override"
+          yamls:
+            - |-
+              spec:
+                containers:
+                  - name: aio
+                    env:
+                      - name: DOCKER_HOST
+                        value: tcp://localhost:2375
